@@ -1,0 +1,11 @@
+"STARTUP.obj",
+"delay.obj",
+"main.obj",
+"ssd1332.obj",
+"iic.obj",
+"myfun.obj",
+"pcf8563.obj",
+"uart.obj",
+"PWM_SOFT.obj" 
+TO "OLED_DEMO" 
+RAMSIZE(256) 

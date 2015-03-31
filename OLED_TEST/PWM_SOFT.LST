@@ -1,0 +1,71 @@
+C51 COMPILER V9.52.0.0   PWM_SOFT                                                          02/11/2015 17:34:04 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE PWM_SOFT
+OBJECT MODULE PLACED IN PWM_SOFT.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE PWM_SOFT.C LARGE BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          #include  "STC12C5A60S2.H"
+   2          #include  "PWM_SOFT.H"
+   3          
+   4          //占空比和PWM计数器
+   5          unsigned char PWM_DUTY_COUNT  = 0;
+   6          unsigned char PWM_DUTY_R    = 0;
+   7          unsigned char PWM_DUTY_G    = 0;
+   8          unsigned char PWM_DUTY_B    = 0;
+   9          
+  10          
+  11          /**********************************************/
+  12          void timer0_init(void)
+  13          {
+  14   1          
+  15   1          TMOD |=  0x02;    // Timer0 set as 8bit reload Timer
+  16   1          TH0 = Timer0_Reload;  //Timer0 Load
+  17   1          TL0 = Timer0_Reload;
+  18   1          ET0 = 1;        //Timer0 Interrupt Enable
+  19   1          TR0 = 1;        //Timer0 Run
+  20   1          EA = 1;         //打开总中断
+  21   1          PWM_R = PWM_OFF; 
+  22   1          PWM_G = PWM_OFF;
+  23   1          PWM_B = PWM_OFF;
+  24   1        
+  25   1      } 
+  26          
+  27          
+  28          /********************** Timer0中断函数 ************************/
+  29          void timer0_isr (void) interrupt 1
+  30          {
+  31   1      
+  32   1              
+  33   1          if(++PWM_DUTY_COUNT == 64)      //PWM周期结束，重新开始新的周期
+  34   1          {
+  35   2            PWM_DUTY_COUNT = 0;
+  36   2      
+  37   2          if(PWM_DUTY_R)       PWM_R  = PWM_ON;
+  38   2          if(PWM_DUTY_G)       PWM_G  = PWM_ON;
+  39   2          if(PWM_DUTY_B)       PWM_B  = PWM_ON;
+  40   2          }
+  41   1          if(PWM_DUTY_COUNT > PWM_DUTY_R)       PWM_R = PWM_OFF;  //判断PWM占空比是否结束
+  42   1          if(PWM_DUTY_COUNT > PWM_DUTY_G)       PWM_G = PWM_OFF;
+  43   1          if(PWM_DUTY_COUNT > PWM_DUTY_B)       PWM_B = PWM_OFF;
+  44   1      
+  45   1      }
+  46          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    128    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      4    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+C51 COMPILER V9.52.0.0   PWM_SOFT                                                          02/11/2015 17:34:04 PAGE 2   
+
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

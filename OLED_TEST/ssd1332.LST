@@ -1,0 +1,338 @@
+C51 COMPILER V9.52.0.0   SSD1332                                                           02/11/2015 17:34:03 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE SSD1332
+OBJECT MODULE PLACED IN ssd1332.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE ssd1332.c LARGE BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          #include "ssd1332.h"
+   2          #include "delay.h"
+   3          #include "font.h"
+   4          #include "STC12C5A60S2.H"
+   5          
+   6          
+   7          /**********************/
+   8          /* 初始化硬件SPI口    */
+   9          /**********************/
+  10          void SPI_Init(void)
+  11          {
+  12   1        SPSTAT |= 0XC0; 
+  13   1        SPCTL = 0XD0; 
+  14   1      }
+  15          
+  16          void WriteCommand(unsigned char com)
+  17          {
+  18   1      
+  19   1        OLED_CS=0;          
+  20   1        OLED_DC=0;            //DC=0;  WRITE COMMAND 
+  21   1        
+  22   1        SPSTAT |= 0Xc0; // 清高两位，
+  23   1        SPDAT=com;
+  24   1        while(!(SPSTAT&0X80));
+  25   1        
+  26   1        OLED_CS=1;
+  27   1      }
+  28          
+  29          void WriteData(unsigned char  dat)
+  30          {
+  31   1      
+  32   1      
+  33   1        OLED_CS=0;          
+  34   1        OLED_DC=1;            //DC=1;  WRITE DATA
+  35   1        
+  36   1        SPSTAT |= 0Xc0; // 清高两位，
+  37   1        SPDAT=dat;
+  38   1        while(!(SPSTAT&0X80));
+  39   1        
+  40   1        OLED_CS=1;
+  41   1      
+  42   1      }
+  43          
+  44          void esbusini(void)
+  45          {
+  46   1        OLED_CS=0;
+  47   1        OLED_RST=0;
+  48   1        delay_nms(100);
+  49   1        OLED_RST=1;
+  50   1        delay_nms(100);
+  51   1      }
+  52          
+  53          
+  54          void OLED_init(void)
+  55          {
+C51 COMPILER V9.52.0.0   SSD1332                                                           02/11/2015 17:34:03 PAGE 2   
+
+  56   1      
+  57   1        esbusini();
+  58   1        SPI_Init();
+  59   1        WriteCommand(0x15); //SET BIAS
+  60   1        WriteCommand(0x00); //Set line0 to COM0
+  61   1        WriteCommand(0x81); //set High Brightness
+  62   1        WriteCommand(0xdf);
+  63   1        WriteCommand(0x82); //set High Brightness
+  64   1        WriteCommand(0x1f);
+  65   1        WriteCommand(0x83); //set High Brightness
+  66   1        WriteCommand(0xff);
+  67   1        WriteCommand(0x87); //set High Brightness
+  68   1        WriteCommand(0x0f);
+  69   1      
+  70   1        WriteCommand(0xa0);//Set Re-map & DataFormat  地址自动增加
+  71   1        //WriteCommand(0x60); //set 65k color format   256c
+  72   1          WriteCommand(0x71);
+  73   1      
+  74   1        WriteCommand(0xa4); //set Normal Display
+  75   1        WriteCommand(0xa8); //set Multiplex Ratio
+  76   1        WriteCommand(0x3f);
+  77   1      
+  78   1        WriteCommand(0xa9); //set Power Control  加电
+  79   1        WriteCommand(0x03);
+  80   1      
+  81   1        WriteCommand(0xaf); //set Display on
+  82   1      
+  83   1        WriteCommand(0xb8);//Set Gray Scale Table
+  84   1        WriteCommand(0x01);
+  85   1        WriteCommand(0x05);
+  86   1        WriteCommand(0x09);
+  87   1        WriteCommand(0x0d);
+  88   1        WriteCommand(0x11);
+  89   1        WriteCommand(0x15);
+  90   1        WriteCommand(0x19);
+  91   1        WriteCommand(0x1d);
+  92   1        WriteCommand(0x21);
+  93   1        WriteCommand(0x25);
+  94   1        WriteCommand(0x29);
+  95   1        WriteCommand(0x2d);
+  96   1        WriteCommand(0x31);
+  97   1        WriteCommand(0x35);
+  98   1        WriteCommand(0x39);
+  99   1        WriteCommand(0x3d);
+ 100   1        WriteCommand(0x41);
+ 101   1        WriteCommand(0x45);
+ 102   1        WriteCommand(0x49);
+ 103   1        WriteCommand(0x4d);
+ 104   1        WriteCommand(0x51);
+ 105   1        WriteCommand(0x55);
+ 106   1        WriteCommand(0x59);
+ 107   1        WriteCommand(0x5d);
+ 108   1        WriteCommand(0x61);
+ 109   1        WriteCommand(0x65);
+ 110   1        WriteCommand(0x69);
+ 111   1        WriteCommand(0x6d);
+ 112   1        WriteCommand(0x71);
+ 113   1        WriteCommand(0x75);
+ 114   1        WriteCommand(0x79);
+ 115   1        WriteCommand(0x7d);
+ 116   1      
+ 117   1        WriteCommand(0xbb);
+C51 COMPILER V9.52.0.0   SSD1332                                                           02/11/2015 17:34:03 PAGE 3   
+
+ 118   1        WriteCommand(0x7f);
+ 119   1        WriteCommand(0xbc);
+ 120   1        WriteCommand(0x7f);
+ 121   1        WriteCommand(0xbd);
+ 122   1        WriteCommand(0x7f);
+ 123   1        
+ 124   1        WriteCommand(0x26);
+ 125   1        WriteCommand(0x11);
+ 126   1      }
+ 127          
+ 128          void disp_all(unsigned char data1,unsigned char data2)
+ 129          {
+ 130   1        uchar ii,jj;
+ 131   1        WriteCommand(0x15);     //设置列地址
+ 132   1        WriteCommand(0x00);     //列地址起始地址0
+ 133   1        WriteCommand(0x5f);     //列地址结束地址95
+ 134   1        WriteCommand(0x75);     //设置行地址
+ 135   1        WriteCommand(0x00);     //行地址起始地址0
+ 136   1        WriteCommand(0x3f);     //行地址结束地址63
+ 137   1        for(ii=0;ii<64;ii++)
+ 138   1        {
+ 139   2          for(jj=0;jj<96;jj++)
+ 140   2          {
+ 141   3                  WriteData(data1);
+ 142   3                  WriteData(data2);
+ 143   3          }
+ 144   2        }
+ 145   1      }
+ 146          
+ 147          void OLED_dot(uchar x,uchar y,uchar R,uchar G,uchar B)
+ 148          {
+ 149   1        WriteCommand(0x15);     //设置列地址
+ 150   1        WriteCommand(x);        //列地址起始地址0
+ 151   1        WriteCommand(x+1);      //列地址结束地址95
+ 152   1        WriteCommand(0x75);     //设置行地址
+ 153   1        WriteCommand(y);        //行地址起始地址0
+ 154   1        WriteCommand(y+1);      //行地址结束地址63
+ 155   1        WriteData((B<<3)|(G>>3));
+ 156   1        WriteData((G<<5)|R);
+ 157   1      }
+ 158          
+ 159          void OLED_circle(uchar X,uchar Y,uchar R,uchar R1,uchar G1,uchar B1) 
+ 160          {//Bresenham算法 
+ 161   1          uchar a,b; 
+ 162   1          int c; 
+ 163   1          a=0; 
+ 164   1          b=R; 
+ 165   1          c=3-2*R; 
+ 166   1          while (a<b) 
+ 167   1          { 
+ 168   2              OLED_dot(X+a,Y+b,R1,G1,B1);     //        7 
+ 169   2              OLED_dot(X-a,Y+b,R1,G1,B1);                                                        //        6 
+ 170   2              OLED_dot(X+a,Y-b,R1,G1,B1);                                                        //        2 
+ 171   2              OLED_dot(X-a,Y-b,R1,G1,B1);                                                        //        3 
+ 172   2              OLED_dot(X+b,Y+a,R1,G1,B1);                                                        //        8 
+ 173   2              OLED_dot(X-b,Y+a,R1,G1,B1);                                                        //        5 
+ 174   2              OLED_dot(X+b,Y-a,R1,G1,B1);                                                        //        1 
+ 175   2              OLED_dot(X-b,Y-a,R1,G1,B1);                                                        //        4 
+ 176   2      
+ 177   2              if(c<0) c=c+4*a+6; 
+ 178   2              else 
+ 179   2              { 
+C51 COMPILER V9.52.0.0   SSD1332                                                           02/11/2015 17:34:03 PAGE 4   
+
+ 180   3                  c=c+4*(a-b)+10; 
+ 181   3                  b-=1; 
+ 182   3              } 
+ 183   2             a+=1; 
+ 184   2          } 
+ 185   1          if (a==b) 
+ 186   1          { 
+ 187   2              OLED_dot(X+a,Y+b,R1,G1,B1); 
+ 188   2              OLED_dot(X+a,Y+b,R1,G1,B1); 
+ 189   2              OLED_dot(X+a,Y-b,R1,G1,B1); 
+ 190   2              OLED_dot(X-a,Y-b,R1,G1,B1); 
+ 191   2              OLED_dot(X+b,Y+a,R1,G1,B1); 
+ 192   2              OLED_dot(X-b,Y+a,R1,G1,B1); 
+ 193   2              OLED_dot(X+b,Y-a,R1,G1,B1); 
+ 194   2              OLED_dot(X-b,Y-a,R1,G1,B1); 
+ 195   2          } 
+ 196   1      } 
+ 197          
+ 198          void OLED_draw_line(uchar x1,uchar y1,uchar x2,uchar y2,uchar R,uchar G,uchar B)
+ 199          {
+ 200   1          WriteCommand(0x21);     //DRAW LINE COMMAND
+ 201   1          WriteCommand(x1);       //column start address 
+ 202   1          WriteCommand(y1);       //row start address
+ 203   1          WriteCommand(x2);       //column end address
+ 204   1          WriteCommand(y2);       //row end address
+ 205   1          WriteCommand(B);
+ 206   1          WriteCommand(G);
+ 207   1          WriteCommand(R);
+ 208   1      }
+ 209          
+ 210          //If fill color option is disabled, the enclosed area will not be filled.
+ 211          void OLED_draw_rectangle(uchar x1,uchar y1,uchar x2,uchar y2,uchar R1,uchar G1,uchar B1,uchar R2,uchar G2,
+             -uchar B2)
+ 212          {
+ 213   1          WriteCommand(0x22);     //DRAW RECTANGLE COMMAND
+ 214   1          WriteCommand(x1);       //column start address 
+ 215   1          WriteCommand(y1);       //row start address
+ 216   1          WriteCommand(x2);       //column end address
+ 217   1          WriteCommand(y2);       //row end address
+ 218   1          WriteCommand(B1);       //line color
+ 219   1          WriteCommand(G1);
+ 220   1          WriteCommand(R1);
+ 221   1          WriteCommand(B2);       //fill color
+ 222   1          WriteCommand(G2);
+ 223   1          WriteCommand(R2);   
+ 224   1      }
+ 225          
+ 226          void OLED_draw_img(uchar x,uchar y,uchar x_size,uchar y_size,uchar image[])
+ 227          {
+ 228   1          uint i;
+ 229   1          
+ 230   1          WriteCommand(0x15);         //设置列地址
+ 231   1        WriteCommand(x);            //列地址起始地址0
+ 232   1        WriteCommand(x+x_size-1);   //列地址结束地址
+ 233   1        WriteCommand(0x75);         //设置行地址
+ 234   1        WriteCommand(y);            //行地址起始地址0
+ 235   1        WriteCommand(y+y_size-1);   //行地址结束地址
+ 236   1        for(i=0;i<(x_size*y_size*2);i++)
+ 237   1        {
+ 238   2              WriteData(image[i]);
+ 239   2        }
+ 240   1      }
+C51 COMPILER V9.52.0.0   SSD1332                                                           02/11/2015 17:34:03 PAGE 5   
+
+ 241          
+ 242          void OLED_putstring(uchar x,uchar y,uchar colorH,uchar colorL,uchar *text)
+ 243          {
+ 244   1          uchar i;
+ 245   1          
+ 246   1          WriteCommand(0x15);     //设置列地址
+ 247   1        WriteCommand(x);        //列地址起始地址
+ 248   1        WriteCommand(95);       //列地址结束地址
+ 249   1        WriteCommand(0x75);     //设置行地址
+ 250   1        WriteCommand(y);        //行地址起始地址
+ 251   1        WriteCommand(y+7);      //行地址结束地址 
+ 252   1      
+ 253   1          while(*text)
+ 254   1          {
+ 255   2              for(i=0;i<8;i++)    //画8个点空一列,减小字模所占空间
+ 256   2              {
+ 257   3                  WriteData(0x00);
+ 258   3                  WriteData(0x00);
+ 259   3              }
+ 260   2            for(i=0;i<40;i++)   //5*8 40个点为一个字母
+ 261   2            {
+ 262   3                  if(ascii[(*text-32)*5+i/8]&(0x80>>(i%8)))
+ 263   3              {
+ 264   4                      WriteData(colorH);
+ 265   4                      WriteData(colorL);
+ 266   4              }
+ 267   3                  else
+ 268   3                  {
+ 269   4                      WriteData(0x00);
+ 270   4                      WriteData(0x00);
+ 271   4                  }
+ 272   3              }
+ 273   2              text++;
+ 274   2          }
+ 275   1      }
+ 276          
+ 277          void OLED_write_chinese(uchar x,uchar y,uchar num,uchar buff[][32])
+ 278          {
+ 279   1          uchar j;
+ 280   1          uint i;
+ 281   1          WriteCommand(0x15);     //设置列地址
+ 282   1          WriteCommand(x);        //列地址起始地址
+ 283   1          WriteCommand(95);       //列地址结束地址
+ 284   1          WriteCommand(0x75);     //设置行地址
+ 285   1          WriteCommand(y);        //行地址起始地址
+ 286   1          WriteCommand(y+15);     //行地址结束地址    
+ 287   1          
+ 288   1          for(j=0;j<num;j++)
+ 289   1          {
+ 290   2            for(i=0;i<256;i++)
+ 291   2            {
+ 292   3                  if(buff[j][i/8]&(0x80>>(i%8)))
+ 293   3              {
+ 294   4                      WriteData(0x07);
+ 295   4                      WriteData(0xe0);
+ 296   4              }
+ 297   3                  else
+ 298   3                  {
+ 299   4                      WriteData(0x00);
+ 300   4                      WriteData(0x00);
+ 301   4                  }
+ 302   3              }
+C51 COMPILER V9.52.0.0   SSD1332                                                           02/11/2015 17:34:03 PAGE 6   
+
+ 303   2          }
+ 304   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1447    ----
+   CONSTANT SIZE    =    475    ----
+   XDATA SIZE       =   ----      56
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

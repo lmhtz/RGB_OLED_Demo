@@ -1,0 +1,198 @@
+C51 COMPILER V9.52.0.0   PCF8563                                                           02/11/2015 17:34:04 PAGE 1   
+
+
+C51 COMPILER V9.52.0.0, COMPILATION OF MODULE PCF8563
+OBJECT MODULE PLACED IN pcf8563.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE pcf8563.c LARGE BROWSE DEBUG OBJECTEXTEND TABS(2)
+
+line level    source
+
+   1          #include "pcf8563.h"
+   2          #include "iic.h"
+   3          
+   4          T_Time time;
+   5          T_DownCounter dcounter;
+   6          
+   7          /******************************************************************
+   8           - 功能描述：向地址addr的寄存器写入多个字节
+   9           - 隶属模块：PCF8563驱动模块
+  10           - 函数属性：内部
+  11           - 参数说明：addr:寄存器地址
+  12                       length:要写入的字节数
+  13                       pbuf:指向数据缓冲区的指针           
+  14           - 返回说明：操作结果，0表示成功，1表示失败
+  15           - 注：无
+  16           ******************************************************************/
+  17          
+  18          unsigned char PCF8563_Write_Bytes(unsigned char addr,unsigned char length,unsigned char *pbuf)
+  19          {
+  20   1       unsigned char i=0;
+  21   1       IIC_Start(); //IIC通信开始
+  22   1       if(IIC_Write_Byte(0xa2)) return 1; //写PCF8563的ID与读写控制位,通信有错误立即返回
+  23   1       if(IIC_Write_Byte(addr)) return 1; //写寄存器地址
+  24   1       for(i=0;i<length;i++) //写入length个字节
+  25   1       {
+  26   2        if(IIC_Write_Byte(pbuf[i])) return 1;//写数据
+  27   2       }
+  28   1       IIC_Stop(); 
+  29   1       return 0;
+  30   1      }
+  31          
+  32          /******************************************************************
+  33           - 功能描述：从地址addr的寄存器读取多个字节
+  34           - 隶属模块：PCF8563驱动模块
+  35           - 函数属性：内部
+  36           - 参数说明：addr:寄存器地址
+  37                       length:要读出的字节数
+  38                       pbuf:指向数据缓冲区的指针           
+  39           - 返回说明：操作结果，0表示成功，1表示失败
+  40           - 注：无
+  41           ******************************************************************/
+  42          
+  43          unsigned char PCF8563_Read_Bytes(unsigned char addr,unsigned char length,unsigned char *pbuf) //从地址addr
+             -连续读取length个字节到pbuf
+  44          { 
+  45   1       unsigned char i=0,err=0;
+  46   1       IIC_Start(); //IIC通信开始
+  47   1       if(IIC_Write_Byte(0xa2)) return 1; //写PCF8563的ID与读写控制位,通信有错误立即返回
+  48   1       if(IIC_Write_Byte(addr)) return 1; //写寄存器地址
+  49   1      
+  50   1       IIC_Start(); //IIC通信开始
+  51   1       if(IIC_Write_Byte(0xa3)) return 1; //写PCF8563的ID与读写控制位
+  52   1       for(i=0;i<length-1;i++) //写入前length-1个字节，并作出应答
+  53   1       {
+  54   2        pbuf[i]=IIC_Read_Byte();
+C51 COMPILER V9.52.0.0   PCF8563                                                           02/11/2015 17:34:04 PAGE 2   
+
+  55   2        IIC_Ack();
+  56   2       }
+  57   1       pbuf[i]=IIC_Read_Byte(); //写入最后一个字节，并作出无应答
+  58   1       IIC_NAck();
+  59   1       IIC_Stop();
+  60   1       return 0;
+  61   1      }
+  62          
+  63          /******************************************************************
+  64           - 功能描述：将BCD码转换为十进制的数值
+  65           - 隶属模块：PCF8563驱动模块
+  66           - 函数属性：内部
+  67           - 参数说明：x:待转换的BCD码字节          
+  68           - 返回说明：转换后的值
+  69           - 注：将BCD格式数据转为实际的值，如29的BCD格式为0x29，实际值为0x1d
+  70           ******************************************************************/
+  71          
+  72          unsigned char BCD2Val(unsigned char x)
+  73          {
+  74   1       return (x>>4)*10+(x&0x0f); //高4位乘以10，再加上低4位，即得到数值
+  75   1      }
+  76          
+  77          /******************************************************************
+  78           - 功能描述：将十进制的数值转换为BCD码
+  79           - 隶属模块：PCF8563驱动模块
+  80           - 函数属性：内部
+  81           - 参数说明：x:待转换的数值         
+  82           - 返回说明：转换后的值
+  83           - 注：将值转为BCD格式，如 23转为BCD格式为 0x23
+  84           ******************************************************************/
+  85          
+  86          unsigned char Val2BCD(unsigned char x)
+  87          {
+  88   1       return (x/10)*16+(x%10); //将十进制的数值十位乘以16，再加上个位，即得到BCD码
+  89   1      }
+  90          
+  91          /******************************************************************
+  92           - 功能描述：读取时间
+  93           - 隶属模块：PCF8563驱动模块
+  94           - 函数属性：外部，供用户使用
+  95           - 参数说明：无        
+  96           - 返回说明：操作结果，0表示成功，1表示失败
+  97           - 注：从PCF8563中读到的时间值，被装载到全局的外部结构体变量time中
+  98           ******************************************************************/
+  99          
+ 100          unsigned char P8563_Read_Time()
+ 101          { 
+ 102   1       unsigned char temp[7];
+ 103   1       if(!PCF8563_Read_Bytes(0x02,7,temp)) //读取时间，即读取PCF8563的时间寄存器，地址从0x02开始
+ 104   1       {
+ 105   2        //以下对读取到temp数组中的时间数据进行截取
+ 106   2        //并转换为十进制数值写入到time中去
+ 107   2        time.second=BCD2Val(temp[0]&0x7f); //秒
+ 108   2        time.minute=BCD2Val(temp[1]&0x7f); //分
+ 109   2        time.hour  =BCD2Val(temp[2]&0x3f); //小时
+ 110   2        time.day   =BCD2Val(temp[3]&0x3f); //日
+ 111   2        time.week  =BCD2Val(temp[4]&0x07); //星期
+ 112   2        time.month =BCD2Val(temp[5]&0x1f); //月
+ 113   2        time.year  =BCD2Val(temp[6]     ); //年
+ 114   2        return 0;
+ 115   2       }
+ 116   1       else
+C51 COMPILER V9.52.0.0   PCF8563                                                           02/11/2015 17:34:04 PAGE 3   
+
+ 117   1       return 1;
+ 118   1      }
+ 119          
+ 120          /******************************************************************
+ 121           - 功能描述：设置时间
+ 122           - 隶属模块：PCF8563驱动模块
+ 123           - 函数属性：外部，供用户使用
+ 124           - 参数说明：无        
+ 125           - 返回说明：操作结果，0表示成功，1表示失败
+ 126           - 注：在设置时间前先将时间数据填充到time中去，随后调用此函数，时间
+ 127                 数据即被写入到PCF8563中，并以新设置的时间继续走时
+ 128           ******************************************************************/
+ 129          
+ 130          unsigned char P8563_Set_Time() 
+ 131          {
+ 132   1       unsigned char temp[7];
+ 133   1       unsigned char i;
+ 134   1       for(i=0;i<7;i++)
+ 135   1       {
+ 136   2        temp[i]=Val2BCD(((unsigned char *)(&time))[i]);//将time中的时间数据转换为BCD格式，并写入到temp数组中
+ 137   2       }
+ 138   1       return PCF8563_Write_Bytes(0x02,7,temp); //将temp数组的数据写入到PCF8563中
+ 139   1      }
+ 140          
+ 141          /******************************************************************
+ 142           - 功能描述：设置倒计时寄存器
+ 143           - 隶属模块：PCF8563驱动模块
+ 144           - 函数属性：外部，供用户使用
+ 145           - 参数说明：无        
+ 146           - 返回说明：操作结果，0表示成功，1表示失败
+ 147           - 注：先将要写入到倒计时寄存器的数据装入全局外部结构体变量dcounter中
+ 148                 随后调动此函数将数据写入
+ 149           ******************************************************************/
+ 150          
+ 151          unsigned char P8563_Set_DownCounter() 
+ 152          {
+ 153   1       return PCF8563_Write_Bytes(0x0e,2,(unsigned char *)&dcounter); 
+ 154   1      }
+ 155          
+ 156          /******************************************************************
+ 157           - 功能描述：读取倒计时寄存器
+ 158           - 隶属模块：PCF8563驱动模块
+ 159           - 函数属性：外部，供用户使用
+ 160           - 参数说明：无        
+ 161           - 返回说明：操作结果，0表示成功，1表示失败
+ 162           - 注：将倒计时寄存器的值读回到dcounter中
+ 163           ******************************************************************/
+ 164          
+ 165          unsigned char P8563_Read_DownCounter() 
+ 166          {
+ 167   1       return PCF8563_Read_Bytes(0x0e,2,(unsigned char *)&dcounter); 
+ 168   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    502    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      9      27
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+C51 COMPILER V9.52.0.0   PCF8563                                                           02/11/2015 17:34:04 PAGE 4   
+
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
